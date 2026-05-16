@@ -1,0 +1,4 @@
+flask
+fpdf
+pillow
+gunicorn
