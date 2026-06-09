@@ -1,116 +1,530 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="dark">
 <head>
-    <title>Image to PDF Pro</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            text-align: center;
-            padding: 40px;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDFcraft Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root[data-theme="dark"]{
+      --bg:#080c14;--surface:#0f1623;--surface2:#1a2235;--border:#1e2d45;
+      --accent:#38e8ff;--accent2:#a5f3a0;--accent3:#ffb347;
+      --text:#e8f0fe;--muted:#5a7a9a;--card-bg:#111827;--danger:#ff5c6a;
+      --shadow:0 4px 32px rgba(0,0,0,.5);
+    }
+    :root[data-theme="light"]{
+      --bg:#f0f4ff;--surface:#fff;--surface2:#e8edf7;--border:#c8d5ea;
+      --accent:#0077cc;--accent2:#22a85a;--accent3:#e07800;
+      --text:#0d1b2e;--muted:#7090aa;--card-bg:#fff;--danger:#e02828;
+      --shadow:0 4px 24px rgba(0,0,0,.1);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);
+         min-height:100vh;padding:24px 16px 80px;transition:background .3s,color .3s}
 
-        h1 {
-            margin-bottom: 30px;
-        }
+    header{display:flex;align-items:center;justify-content:space-between;
+           max-width:860px;margin:0 auto 32px;flex-wrap:wrap;gap:12px}
+    .logo{font-family:'Syne',sans-serif;font-size:clamp(1.4rem,4vw,2rem);
+          font-weight:800;letter-spacing:-1px;color:var(--accent);line-height:1}
+    .logo span{color:var(--accent2)}
 
-        .drop-area {
-            border: 2px dashed #38bdf8;
-            padding: 50px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-            background: #1e293b;
-        }
+    /* Tab bar */
+    .tabs{display:flex;gap:6px;max-width:860px;margin:0 auto 20px;flex-wrap:wrap}
+    .tab{padding:9px 20px;border-radius:8px;border:1px solid var(--border);
+         background:var(--surface);color:var(--muted);cursor:pointer;
+         font-family:'DM Mono',monospace;font-size:.8rem;transition:.2s}
+    .tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700}
+    .tab:not(.active):hover{border-color:var(--accent);color:var(--text)}
 
-        .drop-area.dragover {
-            background: #334155;
-            border-color: #22c55e;
-        }
+    .panel{display:none;max-width:860px;margin:0 auto}
+    .panel.active{display:flex;flex-direction:column;gap:18px}
 
-        input[type="file"] {
-            display: none;
-        }
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+          padding:22px;box-shadow:var(--shadow);transition:background .3s,border-color .3s}
+    .card-label{font-size:.68rem;font-weight:500;text-transform:uppercase;
+                letter-spacing:2px;color:var(--muted);margin-bottom:14px}
 
-        button {
-            margin-top: 25px;
-            padding: 12px 30px;
-            border: none;
-            background: #22c55e;
-            color: black;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+    /* Drop zone */
+    .drop-area{border:2px dashed var(--border);border-radius:10px;padding:44px 20px;
+               text-align:center;cursor:pointer;transition:.25s;background:var(--surface2)}
+    .drop-area.dragover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface2))}
+    .drop-area p{color:var(--muted);font-size:.88rem;line-height:1.9}
+    .drop-area .icon{font-size:2.4rem;display:block;margin-bottom:10px}
+    input[type="file"]{display:none}
 
-        .preview {
-            margin-top: 25px;
-        }
+    /* Preview grid */
+    #preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;margin-top:18px}
+    .img-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;
+              overflow:hidden;position:relative;cursor:grab;transition:box-shadow .2s,transform .2s;user-select:none}
+    .img-card:active{cursor:grabbing}
+    .img-card.dragging{opacity:.4;transform:scale(.96)}
+    .img-card.drag-over{box-shadow:0 0 0 2px var(--accent)}
+    .img-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+    .img-card .info{padding:7px 8px 8px;display:flex;align-items:center;justify-content:space-between;gap:4px}
+    .img-card .fname{font-size:.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .img-card .remove-btn{background:none;border:none;cursor:pointer;color:var(--danger);font-size:1rem;padding:0 2px;flex-shrink:0}
+    .img-card .order-badge{position:absolute;top:6px;left:6px;background:var(--accent);color:#000;
+                           font-size:.6rem;font-weight:700;width:20px;height:20px;border-radius:50%;
+                           display:flex;align-items:center;justify-content:center}
 
-        .preview img {
-            width: 120px;
-            margin: 10px;
-            border-radius: 6px;
-        }
-    </style>
+    /* Sort controls */
+    .sort-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .sort-btn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;
+              background:var(--surface2);color:var(--muted);font-family:'DM Mono',monospace;
+              font-size:.72rem;cursor:pointer;transition:.2s}
+    .sort-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+
+    /* Options */
+    .options-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
+    .opt-group label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:7px;
+                     text-transform:uppercase;letter-spacing:1.5px}
+    select,input[type="range"]{width:100%;background:var(--surface2);border:1px solid var(--border);
+                                color:var(--text);border-radius:7px;padding:9px 12px;
+                                font-family:'DM Mono',monospace;font-size:.83rem;appearance:none;
+                                cursor:pointer;transition:border-color .2s;outline:none}
+    select:focus{border-color:var(--accent)}
+    input[type="range"]{padding:4px 0;accent-color:var(--accent);border:none;background:transparent}
+    .range-row{display:flex;align-items:center;gap:10px}
+
+    /* Toggle checkbox */
+    .toggle-row{display:flex;align-items:center;gap:10px;margin-top:4px}
+    .toggle-row input[type="checkbox"]{width:36px;height:20px;cursor:pointer;accent-color:var(--accent);
+                                       appearance:auto;flex-shrink:0}
+    .toggle-row span{font-size:.78rem;color:var(--muted)}
+
+    /* Merge zone */
+    .merge-drop{border:1.5px dashed var(--border);border-radius:8px;padding:14px 16px;
+                display:flex;align-items:center;justify-content:space-between;gap:10px;
+                cursor:pointer;transition:border-color .2s;background:var(--surface2)}
+    .merge-drop:hover{border-color:var(--accent2)}
+    .merge-info{font-size:.8rem;color:var(--muted)}
+    .merge-name{color:var(--accent2);margin-top:2px;font-size:.78rem}
+    .merge-clear{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.1rem}
+
+    /* Progress bar */
+    .progress-wrap{display:none;margin-top:10px}
+    .progress-wrap.visible{display:block}
+    .progress-track{background:var(--surface2);border-radius:99px;height:8px;overflow:hidden;border:1px solid var(--border)}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+                   border-radius:99px;width:0%;transition:width .3s ease}
+    .progress-label{font-size:.7rem;color:var(--muted);margin-top:6px;min-height:1em}
+
+    /* Action button */
+    .action-btn{width:100%;padding:16px;background:var(--accent);color:#000;border:none;
+                border-radius:10px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+                letter-spacing:1px;cursor:pointer;transition:opacity .2s,transform .15s;
+                display:flex;align-items:center;justify-content:center;gap:8px}
+    .action-btn:hover{opacity:.88;transform:translateY(-1px)}
+    .action-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .action-btn.alt{background:var(--accent3)}
+
+    /* Theme toggle */
+    .theme-toggle{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                  padding:7px 14px;border-radius:20px;cursor:pointer;font-family:'DM Mono',monospace;
+                  font-size:.78rem;display:flex;align-items:center;gap:6px;transition:.2s}
+    .theme-toggle:hover{border-color:var(--accent)}
+
+    /* Split panel */
+    #split-preview{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+    .split-thumb{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;text-align:center}
+    .split-thumb img{width:100%;aspect-ratio:3/4;object-fit:cover}
+    .split-thumb .pg{font-size:.62rem;color:var(--muted);padding:4px}
+
+    #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
+           background:var(--surface);border:1px solid var(--border);color:var(--text);
+           padding:12px 22px;border-radius:30px;font-size:.82rem;box-shadow:var(--shadow);
+           transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap}
+    #toast.show{transform:translateX(-50%) translateY(0)}
+
+    @media(max-width:480px){
+      .options-grid{grid-template-columns:1fr}
+      #preview{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+      .drop-area{padding:32px 12px}
+    }
+  </style>
 </head>
 <body>
 
-<h1>🚀 Image to PDF Converter PRO</h1>
+<header>
+  <div class="logo">PDF<span>craft</span></div>
+  <button class="theme-toggle" id="themeBtn">🌙 Dark mode</button>
+</header>
 
-<form action="/convert" method="POST" enctype="multipart/form-data">
+<!-- Tab navigation -->
+<div class="tabs">
+  <button class="tab active" data-tab="convert">🖼️ Images → PDF</button>
+  <button class="tab" data-tab="split">✂️ Split PDF → Images</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PANEL 1: Convert images to PDF                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel active" id="tab-convert">
+
+  <!-- Step 1: Images -->
+  <div class="card">
+    <div class="card-label">01 — Select &amp; Sort Images</div>
     <div class="drop-area" id="drop-area">
-        <p>Drag & Drop Images Here<br>or Click to Select</p>
-        <input type="file" id="fileElem" name="images" multiple accept="image/*">
+      <span class="icon">🖼️</span>
+      <p>Drag &amp; drop images here<br>or <strong>click to browse</strong></p>
+      <input type="file" id="fileElem" multiple accept="image/*"/>
     </div>
 
-    <div class="preview" id="preview"></div>
+    <!-- Sort buttons -->
+    <div class="sort-bar" id="sortBar" style="display:none">
+      <button class="sort-btn" onclick="sortImages('name-asc')">🔤 Name A→Z</button>
+      <button class="sort-btn" onclick="sortImages('name-desc')">🔤 Name Z→A</button>
+      <button class="sort-btn" onclick="sortImages('size-asc')">📦 Size ↑</button>
+      <button class="sort-btn" onclick="sortImages('size-desc')">📦 Size ↓</button>
+      <button class="sort-btn" onclick="sortImages('reverse')">🔃 Reverse</button>
+    </div>
 
-    <button type="submit">Convert to PDF</button>
-</form>
+    <div id="preview"></div>
+  </div>
+
+  <!-- Step 2: Options -->
+  <div class="card">
+    <div class="card-label">02 — Options</div>
+    <div class="options-grid">
+      <div class="opt-group">
+        <label>Page size</label>
+        <select id="pageSize">
+          <option value="A4">A4 (210 × 297 mm)</option>
+          <option value="Letter">Letter (8.5 × 11 in)</option>
+          <option value="Legal">Legal (8.5 × 14 in)</option>
+          <option value="A3">A3 (297 × 420 mm)</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Image quality — <span id="qualityLabel">85</span>%</label>
+        <div class="range-row">
+          <input type="range" id="quality" min="10" max="95" value="85"
+            oninput="document.getElementById('qualityLabel').textContent=this.value"/>
+        </div>
+      </div>
+    </div>
+    <!-- OCR toggle -->
+    <div class="toggle-row" style="margin-top:16px">
+      <input type="checkbox" id="ocrToggle"/>
+      <span>🔍 <strong>OCR</strong> — make PDF text searchable (slower)</span>
+    </div>
+  </div>
+
+  <!-- Step 3: Merge -->
+  <div class="card">
+    <div class="card-label">03 — Merge with existing PDF (optional)</div>
+    <div class="merge-drop" id="mergeDrop" onclick="document.getElementById('mergeInput').click()">
+      <div>
+        <div class="merge-info">Prepend an existing PDF before your images</div>
+        <div class="merge-name" id="mergeFileName">No file chosen</div>
+      </div>
+      <button class="merge-clear" id="mergeClear" title="Remove" style="display:none">✕</button>
+    </div>
+    <input type="file" id="mergeInput" accept=".pdf"/>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="convertProgress">
+    <div class="progress-track"><div class="progress-fill" id="convertFill"></div></div>
+    <div class="progress-label" id="convertMsg">Starting…</div>
+  </div>
+
+  <button class="action-btn" id="convertBtn" disabled>⚡ Convert to PDF</button>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PANEL 2: Split PDF into images                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="panel" id="tab-split">
+
+  <div class="card">
+    <div class="card-label">01 — Upload PDF to Split</div>
+    <div class="drop-area" id="split-drop">
+      <span class="icon">📄</span>
+      <p>Drag &amp; drop a PDF here<br>or <strong>click to browse</strong></p>
+      <input type="file" id="splitFileElem" accept=".pdf"/>
+    </div>
+    <div id="split-preview"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">02 — Options</div>
+    <div class="options-grid">
+      <div class="opt-group">
+        <label>Image resolution (DPI)</label>
+        <select id="splitDpi">
+          <option value="72">72 dpi — web / preview</option>
+          <option value="150" selected>150 dpi — standard</option>
+          <option value="300">300 dpi — high quality</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Page order</label>
+        <select id="splitOrder">
+          <option value="asc">1 → last (default)</option>
+          <option value="desc">Last → 1 (reversed)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="splitProgress">
+    <div class="progress-track"><div class="progress-fill" id="splitFill"></div></div>
+    <div class="progress-label" id="splitMsg">Starting…</div>
+  </div>
+
+  <button class="action-btn alt" id="splitBtn" disabled>✂️ Split &amp; Download ZIP</button>
+</div>
+
+<div id="toast"></div>
 
 <script>
-    const dropArea = document.getElementById("drop-area");
-    const fileInput = document.getElementById("fileElem");
-    const preview = document.getElementById("preview");
+// ── Helpers ────────────────────────────────────────────────────────────────
+function uid(){ return Math.random().toString(36).slice(2,10); }
 
-    dropArea.addEventListener("click", () => fileInput.click());
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
 
-    dropArea.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dropArea.classList.add("dragover");
+// ── Theme ──────────────────────────────────────────────────────────────────
+const html=document.documentElement;
+const themeBtn=document.getElementById('themeBtn');
+let dark=true;
+themeBtn.onclick=()=>{
+  dark=!dark;
+  html.setAttribute('data-theme',dark?'dark':'light');
+  themeBtn.textContent=dark?'🌙 Dark mode':'☀️ Light mode';
+};
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  };
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// PANEL 1 — Convert
+// ══════════════════════════════════════════════════════════════════════════
+let imageFiles=[];
+let mergeFile=null;
+let dragSrcIdx=null;
+
+const dropArea   = document.getElementById('drop-area');
+const fileElem   = document.getElementById('fileElem');
+const preview    = document.getElementById('preview');
+const convertBtn = document.getElementById('convertBtn');
+const sortBar    = document.getElementById('sortBar');
+
+dropArea.addEventListener('click', ()=>fileElem.click());
+dropArea.addEventListener('dragover', e=>{e.preventDefault();dropArea.classList.add('dragover');});
+dropArea.addEventListener('dragleave', ()=>dropArea.classList.remove('dragover'));
+dropArea.addEventListener('drop', e=>{
+  e.preventDefault(); dropArea.classList.remove('dragover');
+  addFiles([...e.dataTransfer.files]);
+});
+fileElem.addEventListener('change', ()=>{ addFiles([...fileElem.files]); fileElem.value=''; });
+
+function addFiles(newFiles){
+  newFiles.filter(f=>f.type.startsWith('image/')).forEach(f=>{
+    imageFiles.push({file:f, url:URL.createObjectURL(f), name:f.name});
+  });
+  renderPreview();
+}
+
+function sortImages(mode){
+  if(mode==='name-asc')  imageFiles.sort((a,b)=>a.name.localeCompare(b.name));
+  if(mode==='name-desc') imageFiles.sort((a,b)=>b.name.localeCompare(a.name));
+  if(mode==='size-asc')  imageFiles.sort((a,b)=>a.file.size-b.file.size);
+  if(mode==='size-desc') imageFiles.sort((a,b)=>b.file.size-a.file.size);
+  if(mode==='reverse')   imageFiles.reverse();
+  renderPreview();
+}
+
+function renderPreview(){
+  preview.innerHTML='';
+  convertBtn.disabled = imageFiles.length===0;
+  sortBar.style.display = imageFiles.length>1 ? 'flex' : 'none';
+
+  imageFiles.forEach((item,idx)=>{
+    const card=document.createElement('div');
+    card.className='img-card'; card.draggable=true; card.dataset.idx=idx;
+    card.innerHTML=`
+      <div class="order-badge">${idx+1}</div>
+      <img src="${item.url}" alt="${item.name}" loading="lazy"/>
+      <div class="info">
+        <span class="fname" title="${item.name}">${item.name}</span>
+        <button class="remove-btn" data-idx="${idx}">✕</button>
+      </div>`;
+
+    card.addEventListener('dragstart',e=>{
+      dragSrcIdx=idx; setTimeout(()=>card.classList.add('dragging'),0);
+      e.dataTransfer.effectAllowed='move';
     });
-
-    dropArea.addEventListener("dragleave", () => {
-        dropArea.classList.remove("dragover");
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+    card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('drag-over');});
+    card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault(); card.classList.remove('drag-over');
+      if(dragSrcIdx!==null && dragSrcIdx!==idx){
+        const moved=imageFiles.splice(dragSrcIdx,1)[0];
+        imageFiles.splice(idx,0,moved);
+        renderPreview();
+      }
     });
-
-    dropArea.addEventListener("drop", (e) => {
-        e.preventDefault();
-        dropArea.classList.remove("dragover");
-        fileInput.files = e.dataTransfer.files;
-        showPreview(fileInput.files);
+    card.querySelector('.remove-btn').addEventListener('click',e=>{
+      e.stopPropagation();
+      URL.revokeObjectURL(imageFiles[idx].url);
+      imageFiles.splice(idx,1);
+      renderPreview();
     });
+    preview.appendChild(card);
+  });
+}
 
-    fileInput.addEventListener("change", () => {
-        showPreview(fileInput.files);
-    });
+// Merge
+const mergeInput    = document.getElementById('mergeInput');
+const mergeFileName = document.getElementById('mergeFileName');
+const mergeClear    = document.getElementById('mergeClear');
+document.getElementById('mergeDrop').addEventListener('click',()=>mergeInput.click());
+mergeInput.addEventListener('change',()=>{
+  mergeFile = mergeInput.files[0]||null;
+  mergeFileName.textContent = mergeFile?mergeFile.name:'No file chosen';
+  mergeClear.style.display  = mergeFile?'block':'none';
+  mergeInput.value='';
+});
+mergeClear.addEventListener('click',e=>{
+  e.stopPropagation(); mergeFile=null;
+  mergeFileName.textContent='No file chosen'; mergeClear.style.display='none';
+});
 
-    function showPreview(files) {
-        preview.innerHTML = "";
-        for (let file of files) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.createElement("img");
-                img.src = e.target.result;
-                preview.appendChild(img);
-            }
-            reader.readAsDataURL(file);
-        }
+// Progress SSE helper
+function trackProgress(taskId, fillEl, msgEl, wrapEl){
+  wrapEl.classList.add('visible');
+  fillEl.style.width='0%'; msgEl.textContent='Starting…';
+  const es = new EventSource('/progress/'+taskId);
+  es.onmessage=e=>{
+    const [pct,msg]=e.data.split('|');
+    fillEl.style.width=pct+'%';
+    msgEl.textContent=msg||'';
+    if(+pct>=100){ es.close(); setTimeout(()=>wrapEl.classList.remove('visible'),1500); }
+  };
+  es.onerror=()=>es.close();
+  return es;
+}
+
+// Convert
+convertBtn.addEventListener('click', async()=>{
+  if(imageFiles.length===0) return;
+  convertBtn.disabled=true; convertBtn.textContent='⏳ Converting…';
+
+  const taskId = uid();
+  const fd = new FormData();
+  fd.append('task_id', taskId);
+  fd.append('order', imageFiles.map(i=>i.file.name).join(','));
+  imageFiles.forEach(item=>fd.append('images',item.file,item.file.name));
+  fd.append('quality', document.getElementById('quality').value);
+  fd.append('page_size', document.getElementById('pageSize').value);
+  fd.append('ocr', document.getElementById('ocrToggle').checked?'true':'false');
+  if(mergeFile) fd.append('merge_pdf',mergeFile,mergeFile.name);
+
+  const es = trackProgress(taskId,
+    document.getElementById('convertFill'),
+    document.getElementById('convertMsg'),
+    document.getElementById('convertProgress'));
+
+  try{
+    const resp = await fetch('/convert',{method:'POST',body:fd});
+    es.close();
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({error:'Server error'}));
+      showToast('❌ '+(err.error||'Conversion failed')); return;
     }
-</script>
+    const blob=await resp.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='converted.pdf'; a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('✅ PDF downloaded!');
+  }catch(err){ showToast('❌ Network error'); }
+  finally{
+    convertBtn.disabled=imageFiles.length===0;
+    convertBtn.textContent='⚡ Convert to PDF';
+    document.getElementById('convertProgress').classList.remove('visible');
+  }
+});
 
+
+// ══════════════════════════════════════════════════════════════════════════
+// PANEL 2 — Split PDF
+// ══════════════════════════════════════════════════════════════════════════
+let splitFile=null;
+const splitDrop    = document.getElementById('split-drop');
+const splitFileEl  = document.getElementById('splitFileElem');
+const splitPreview = document.getElementById('split-preview');
+const splitBtn     = document.getElementById('splitBtn');
+
+splitDrop.addEventListener('click',()=>splitFileEl.click());
+splitDrop.addEventListener('dragover',e=>{e.preventDefault();splitDrop.classList.add('dragover');});
+splitDrop.addEventListener('dragleave',()=>splitDrop.classList.remove('dragover'));
+splitDrop.addEventListener('drop',e=>{
+  e.preventDefault(); splitDrop.classList.remove('dragover');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type==='application/pdf') loadSplitFile(f);
+});
+splitFileEl.addEventListener('change',()=>{
+  if(splitFileEl.files[0]) loadSplitFile(splitFileEl.files[0]);
+  splitFileEl.value='';
+});
+
+function loadSplitFile(f){
+  splitFile=f;
+  splitBtn.disabled=false;
+  // Show PDF name in drop zone
+  splitDrop.querySelector('p').innerHTML=`<strong>${f.name}</strong><br><span style="font-size:.75rem;color:var(--muted)">${(f.size/1024/1024).toFixed(2)} MB</span>`;
+}
+
+splitBtn.addEventListener('click', async()=>{
+  if(!splitFile) return;
+  splitBtn.disabled=true; splitBtn.textContent='⏳ Splitting…';
+
+  const taskId=uid();
+  const fd=new FormData();
+  fd.append('task_id',taskId);
+  fd.append('split_pdf',splitFile,splitFile.name);
+  fd.append('dpi',document.getElementById('splitDpi').value);
+  fd.append('sort',document.getElementById('splitOrder').value);
+
+  const es = trackProgress(taskId,
+    document.getElementById('splitFill'),
+    document.getElementById('splitMsg'),
+    document.getElementById('splitProgress'));
+
+  try{
+    const resp=await fetch('/split',{method:'POST',body:fd});
+    es.close();
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({error:'Server error'}));
+      showToast('❌ '+(err.error||'Split failed')); return;
+    }
+    const blob=await resp.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='pdf_pages.zip'; a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('✅ ZIP downloaded!');
+  }catch(err){ showToast('❌ Network error'); }
+  finally{
+    splitBtn.disabled=false;
+    splitBtn.textContent='✂️ Split & Download ZIP';
+    document.getElementById('splitProgress').classList.remove('visible');
+  }
+});
+</script>
 </body>
 </html>
