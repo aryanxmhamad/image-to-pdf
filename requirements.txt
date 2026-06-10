@@ -1,4 +1,7 @@
-flask
-fpdf
-pillow
-gunicorn
+Flask
+fpdf2
+Pillow
+Werkzeug
+pypdf
+pdf2image
+ocrmypdf
